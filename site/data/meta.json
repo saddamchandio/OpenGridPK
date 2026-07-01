@@ -1,20 +1,22 @@
 {
-  "built_at": "2026-06-01T06:58:54+00:00",
+  "built_at": "2026-07-01T06:35:00+00:00",
   "line_counts": {
     "500kv": 229,
-    "hvdc": 5,
+    "hvdc": 20,
     "220kv": 319,
-    "132kv": 1432,
+    "132kv": 1434,
     "66kv": 125
   },
   "line_lengths_km": {
     "500kv": 7467.8,
     "hvdc": 887.5,
     "220kv": 6854.7,
-    "132kv": 20061.5,
+    "132kv": 20077.6,
     "66kv": 2361.0
   },
-  "substation_count": 1177,
+  "substation_count": 1178,
   "generation_count": 232,
-  "regression_warnings": []
+  "regression_warnings": [
+    "hvdc: line count changed by >20% (5 -> 20)"
+  ]
 }
