@@ -41,9 +41,25 @@ def test_typo_220kw_normalizes_to_220kv():
     assert len(out["220kv"]) == 1
 
 
-def test_no_voltage_tag_drops_line():
+def test_no_voltage_tag_lands_in_unknown_bucket():
     out = bucket_lines_by_voltage(_result([_osm_way(444, None)]))
-    assert sum(len(v) for v in out.values()) == 0
+    assert len(out["unknown"]) == 1
+    assert out["unknown"][0]["properties"]["voltage"] is None
+    assert sum(len(v) for v in out.values()) == 1
+
+
+def test_junk_voltage_tag_lands_in_unknown_bucket():
+    out = bucket_lines_by_voltage(_result([_osm_way(447, "0")]))
+    assert len(out["unknown"]) == 1
+
+
+def test_voltage_correction_moves_untagged_line_out_of_unknown(tmp_path, monkeypatch):
+    (tmp_path / "voltage_corrections.json").write_text('{"448": 220000}', encoding="utf-8")
+    monkeypatch.setattr("pipeline.merge.OVERRIDES_DIR", tmp_path)
+    out = bucket_lines_by_voltage(_result([_osm_way(448, None)]))
+    assert len(out["unknown"]) == 0
+    assert len(out["220kv"]) == 1
+    assert out["220kv"][0]["properties"]["source"] == "override"
 
 
 def test_minor_line_without_voltage_dropped():

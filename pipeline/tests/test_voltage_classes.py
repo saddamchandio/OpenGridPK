@@ -7,9 +7,8 @@ def test_loads_all_classes():
     classes = load_voltage_classes()
     ids = [c.id for c in classes]
     # 765 kV omitted: no PK lines tagged at that voltage in OSM.
-    # 'unknown' bucket dropped: lines without a parseable canonical voltage
-    # are dropped from the output rather than shown ambiguously.
-    assert ids == ["500kv", "hvdc", "220kv", "132kv", "66kv"]
+    # 'unknown' comes last so it draws underneath every classified voltage.
+    assert ids == ["500kv", "hvdc", "220kv", "132kv", "66kv", "unknown"]
 
 
 def test_all_classes_visible_by_default():

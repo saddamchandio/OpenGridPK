@@ -77,7 +77,7 @@ function addVoltageLayer(map, vc) {
   });
 
   // Higher voltages slightly thicker so the eye finds the backbone first.
-  const widthScale = vc.id === "unknown" ? 0.6 : voltageWidthScale(vc.voltage_v);
+  const widthScale = vc.id === "unknown" ? 0.7 : voltageWidthScale(vc.voltage_v);
 
   const paint = {
     "line-color": vc.color,
@@ -88,7 +88,7 @@ function addVoltageLayer(map, vc) {
       12, 3.0 * widthScale,
       16, 5.0 * widthScale,
     ],
-    "line-opacity": vc.id === "unknown" ? 0.55 : 0.95,
+    "line-opacity": vc.id === "unknown" ? 0.8 : 0.95,
   };
   if (vc.line_dash) paint["line-dasharray"] = vc.line_dash;
 

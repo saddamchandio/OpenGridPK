@@ -1,5 +1,5 @@
 {
-  "$schema_comment": "Canonical voltage classes for OpenGridPK. Used by pipeline (filtering & file naming) and site (legend & layer paint). 765 kV intentionally omitted: as of 2026 there are no PK 765 kV lines tagged in OSM. Lines without a parseable voltage tag are dropped from the output.",
+  "$schema_comment": "Canonical voltage classes for OpenGridPK. Used by pipeline (filtering & file naming) and site (legend & layer paint). 765 kV intentionally omitted: as of 2026 there are no PK 765 kV lines tagged in OSM. The final 'unknown' class (voltage_v 0) holds power=line ways with no usable voltage tag: shown in its own purple so the network reads as complete, never assigned to a real voltage.",
   "classes": [
     {
       "id": "500kv",
@@ -55,6 +55,17 @@
       "default_visible": true,
       "min_zoom_visible": 7,
       "geojson_filename": "lines_66kv.geojson"
+    },
+    {
+      "id": "unknown",
+      "label": "Unclassified voltage",
+      "voltage_v": 0,
+      "is_hvdc": false,
+      "color": "#9B5DE5",
+      "line_dash": null,
+      "default_visible": true,
+      "min_zoom_visible": 5,
+      "geojson_filename": "lines_unknown.geojson"
     }
   ]
 }
