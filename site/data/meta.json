@@ -1,20 +1,22 @@
 {
-  "built_at": "2026-08-01T05:28:44+00:00",
+  "built_at": "2026-11-26T23:57:35+00:00",
   "line_counts": {
-    "500kv": 229,
+    "500kv": 252,
     "hvdc": 20,
-    "220kv": 319,
-    "132kv": 1438,
-    "66kv": 125
+    "220kv": 323,
+    "132kv": 1448,
+    "66kv": 128,
+    "unknown": 1283
   },
   "line_lengths_km": {
-    "500kv": 7467.8,
+    "500kv": 7520.4,
     "hvdc": 887.5,
-    "220kv": 6854.7,
-    "132kv": 20093.3,
-    "66kv": 2361.0
+    "220kv": 6891.4,
+    "132kv": 20170.0,
+    "66kv": 2398.0,
+    "unknown": 5184.4
   },
-  "substation_count": 1200,
-  "generation_count": 258,
+  "substation_count": 1212,
+  "generation_count": 277,
   "regression_warnings": []
 }

@@ -16,7 +16,7 @@ OpenGridPK was put together to address three concrete needs:
 
 1. **A single, navigable view of the high-voltage network.** Layered by voltage class, with substations and utility-scale generation plotted on the same canvas.
 2. **A reusable open dataset.** The pipeline emits clean GeoJSON files that can be loaded into QGIS, fed into a PyPSA model, or analysed in a notebook without any further processing.
-3. **An honest baseline.** Most other PK grid maps either silently drop lines they can't classify or pretend to have data they don't. OpenGridPK only displays lines whose voltage can be verified against OSM tags or upstream relations; everything else is dropped rather than misrepresented.
+3. **An honest baseline.** Most other PK grid maps either silently drop lines they can't classify or pretend to have data they don't. OpenGridPK only colours a line by voltage when that voltage can be verified against OSM tags or upstream relations; lines with no recorded voltage are drawn in a separate purple "Unclassified voltage" layer rather than guessed into a class.
 
 The intended audience is broad: power-systems engineers, researchers, energy journalists, students, and anyone curious about the grid that delivers their electricity.
 
@@ -33,6 +33,7 @@ The intended audience is broad: power-systems engineers, researchers, energy jou
 | 220 kV | OSM `power=line` with `voltage=220000` | NTDC sub-transmission |
 | 132 kV | OSM `power=line` with `voltage=132000` | DISCO-level high voltage |
 | 66 kV | OSM `power=line` with `voltage=66000` | Mostly K-Electric and legacy WAPDA |
+| Unclassified | OSM `power=line` with no usable `voltage` tag | Purple; real voltage unknown, could be any class |
 
 ### Points
 
@@ -75,7 +76,7 @@ The static site (`site/`) is plain HTML/CSS/JS using MapLibre GL JS over a Carto
 
 These are deliberately written up so that consumers of the data understand exactly what they are looking at.
 
-- **OSM is the floor, not the ceiling.** The map is no more complete than OSM coverage for Pakistan. As of this build, OSM has ~1,300 transmission-class line segments without a voltage tag. These are dropped — they are not silently classified into a default voltage. If you spot a missing line you can identify, the right fix is either to tag it on osm.org or to add an entry to `data/overrides/`.
+- **OSM is the floor, not the ceiling.** The map is no more complete than OSM coverage for Pakistan. As of this build, OSM has ~1,300 transmission-class line segments without a voltage tag. These are shown in the purple "Unclassified voltage" layer — they are not silently classified into a default voltage, and the layer can be switched off in the legend. If you can identify one, the right fix is either to tag it on osm.org or to add an entry to `data/overrides/voltage_corrections.json`, which moves it into the correct class.
 
 - **No 765 kV layer.** Pakistan has under-construction 765 kV infrastructure (Matiari–Moro), but as of the current data refresh nothing in OSM is tagged at that voltage. Once tagging exists, the class can be re-introduced in `data/reference/voltage_classes.json` and the next refresh will pick it up automatically.
 

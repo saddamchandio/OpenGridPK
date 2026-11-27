@@ -12,6 +12,10 @@ from functools import cache
 
 from pipeline._paths import VOLTAGE_CLASSES_FILE
 
+# Catch-all class for `power=line` ways with no usable voltage tag. It is drawn
+# in its own colour and never matched against a real voltage.
+UNKNOWN_CLASS_ID = "unknown"
+
 
 @dataclass(frozen=True)
 class VoltageClass:

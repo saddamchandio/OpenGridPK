@@ -6,10 +6,12 @@ Flow:
   3. If the way has no voltage but is a member of a power route relation that
      does, inherit the relation's voltage.
   4. Snap to canonical class (500 / 220 / 132 / 66 kV or HVDC) within ±5%.
-  5. Lines that don't snap to any canonical class are dropped — we only show
-     verified transmission voltages. Use data/overrides/add_lines.geojson to
-     add specific lines that OSM lacks data for.
-  6. Apply data/overrides/* on top.
+  5. `power=line` ways with no usable voltage at all go to the 'unknown' class,
+     drawn in its own colour. They are never guessed into a real voltage.
+  6. Lines with a real voltage that is not a canonical class (e.g. 11 kV), and
+     untagged `minor_line` / `cable` ways, are dropped.
+  7. Apply data/overrides/* on top. A voltage correction moves a line into the
+     corrected class, including out of 'unknown'.
 
 Multi-circuit lines (e.g. voltage="220000;132000") appear in MULTIPLE buckets
 so they show up under both layer toggles.
@@ -22,7 +24,7 @@ import json
 from pipeline._paths import OVERRIDES_DIR
 from pipeline.capacity_parser import parse_capacity_mw
 from pipeline.overpass import OverpassResult
-from pipeline.voltage_classes import VoltageClass, load_voltage_classes
+from pipeline.voltage_classes import UNKNOWN_CLASS_ID, VoltageClass, load_voltage_classes
 from pipeline.voltage_parser import classify_to_canonical, parse_voltage_tag
 
 UTILITY_PLANT_MIN_MW = 5.0
@@ -59,13 +61,16 @@ def bucket_lines_by_voltage(
     """Return {voltage_class_id: [feature, ...]} for every voltage class.
 
     Includes the 'unknown' class for `power=line` ways without a parseable
-    voltage tag (and not recoverable from a parent relation).
+    voltage tag (not recoverable from a parent relation or a local correction).
     `power=minor_line` and `power=cable` without voltage are silently dropped.
     """
     relation_voltage_map = relation_voltage_map or {}
     classes = load_voltage_classes()
-    by_canonical_v: dict[int, VoltageClass] = {c.voltage_v: c for c in classes}
+    by_canonical_v: dict[int, VoltageClass] = {
+        c.voltage_v: c for c in classes if c.id != UNKNOWN_CLASS_ID
+    }
     buckets: dict[str, list[dict]] = {c.id: [] for c in classes}
+    corrections = _load_voltage_corrections()
 
     for el in osm_result.raw.get("elements", []):
         if el.get("type") != "way" or "geometry" not in el:
@@ -86,6 +91,12 @@ def bucket_lines_by_voltage(
                 voltages_v = inherited
                 voltage_inherited = True
 
+        # A local correction replaces whatever OSM says, so an untagged or
+        # mistagged line lands in the corrected class rather than vanishing.
+        corrected_v = corrections.get(str(el["id"]))
+        if corrected_v is not None:
+            voltages_v = [corrected_v]
+
         is_hvdc = tags.get("frequency") == "0"
 
         canonical_classes_for_this_line: list[VoltageClass] = []
@@ -101,7 +112,12 @@ def bucket_lines_by_voltage(
             canonical_classes_for_this_line.append(vc)
 
         if not canonical_classes_for_this_line:
-            # Drop: we only show lines that snap to a known transmission class.
+            if not voltages_v and power_kind == "line" and UNKNOWN_CLASS_ID in buckets:
+                # Mapped as a transmission line but nobody recorded a voltage.
+                buckets[UNKNOWN_CLASS_ID].append(
+                    _make_feature(coords, el, tags, vc=None, is_hvdc=False, inherited=False)
+                )
+            # Otherwise drop: a known voltage outside the transmission classes.
             continue
 
         for vc in canonical_classes_for_this_line:
@@ -112,8 +128,10 @@ def bucket_lines_by_voltage(
             )
 
     for vc in classes:
-        buckets[vc.id] = _apply_voltage_corrections(buckets[vc.id], vc)
         buckets[vc.id] = _apply_name_corrections(buckets[vc.id])
+        if vc.id == UNKNOWN_CLASS_ID:
+            continue  # no voltage to correct, and added lines must state one
+        buckets[vc.id] = _mark_voltage_corrections(buckets[vc.id], corrections)
         buckets[vc.id].extend(_load_added_lines(vc))
     return buckets
 
@@ -210,27 +228,21 @@ def _extract_point(el: dict) -> tuple[float | None, float | None]:
     return None, None
 
 
-def _apply_voltage_corrections(features: list[dict], vc: VoltageClass) -> list[dict]:
+def _load_voltage_corrections() -> dict[str, int]:
+    """Return {osm_way_id: corrected_voltage_v} from the overrides folder."""
     path = OVERRIDES_DIR / "voltage_corrections.json"
     if not path.exists():
-        return features
+        return {}
     raw = json.loads(path.read_text(encoding="utf-8"))
-    corrections: dict[str, int] = {k: int(v) for k, v in raw.items() if not k.startswith("$")}
-    if not corrections:
-        return features
+    return {k: int(v) for k, v in raw.items() if not k.startswith("$")}
 
-    out: list[dict] = []
+
+def _mark_voltage_corrections(features: list[dict], corrections: dict[str, int]) -> list[dict]:
+    """Attribute corrected lines to the override rather than to OSM."""
     for f in features:
-        osm_id = str(f["properties"].get("osm_id", ""))
-        corrected_v = corrections.get(osm_id)
-        if corrected_v is None:
-            out.append(f)
-            continue
-        if corrected_v == vc.voltage_v:
+        if str(f["properties"].get("osm_id", "")) in corrections:
             f["properties"]["source"] = "override"
-            f["properties"]["voltage"] = corrected_v
-            out.append(f)
-    return out
+    return features
 
 
 def _apply_name_corrections(features: list[dict]) -> list[dict]:

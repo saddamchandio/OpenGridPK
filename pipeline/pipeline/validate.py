@@ -12,7 +12,7 @@ from dataclasses import dataclass
 from shapely.geometry import shape
 
 from pipeline._paths import SITE_META_FILE
-from pipeline.voltage_classes import VoltageClass
+from pipeline.voltage_classes import UNKNOWN_CLASS_ID, VoltageClass
 
 LENGTH_DELTA_TOLERANCE = 0.20  # ±20 % vs previous run
 COUNT_DELTA_TOLERANCE = 0.20
@@ -35,7 +35,13 @@ def validate_lines(features: list[dict], vc: VoltageClass) -> None:
 
     for f in features:
         v = f["properties"].get("voltage")
-        if int(v) != vc.voltage_v:
+        if vc.id == UNKNOWN_CLASS_ID:
+            if v is not None:
+                raise ValidationFailure(
+                    f"{vc.id}: feature osm_id={f['properties'].get('osm_id')} "
+                    f"has voltage={v}, expected none"
+                )
+        elif int(v) != vc.voltage_v:
             raise ValidationFailure(
                 f"{vc.id}: feature osm_id={f['properties'].get('osm_id')} "
                 f"has voltage={v}, expected {vc.voltage_v}"
